@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+
+# 开发环境
+.venv/
+venv/
+.env
+*.swp
+*.swo
+*~
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# 内部工具/监控（不对外发布）
+monitor-reports/
+
+# 临时文件
+*.tmp
+*.log

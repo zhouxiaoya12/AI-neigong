@@ -1,0 +1,120 @@
+[
+  {
+    "type": "选择",
+    "difficulty": "简单",
+    "question": "在 Transformer 架构中，自注意力机制的核心计算公式 Attention(Q,K,V) = softmax(QK^T/√d_k) × V 中，除以 √d_k 的目的是什么？",
+    "options": {
+      "A": "加速矩阵乘法运算",
+      "B": "防止点积数值过大导致 softmax 梯度消失",
+      "C": "减少参数量以降低显存占用",
+      "D": "使 Q 和 K 的维度对齐"
+    },
+    "answer": "B",
+    "explanation": "当 d_k 较大时，Q 和 K 的点积结果数值会很大，softmax 在输入值很大时梯度趋近于零（饱和区），导致训练无法进行。除以 √d_k 将点积缩放到合理范围，使 softmax 输出分布更均匀，梯度更健康。这是 Transformer 原始论文中的关键设计。",
+    "topic": "Transformer架构"
+  },
+  {
+    "type": "选择",
+    "difficulty": "简单",
+    "question": "RAG（检索增强生成）相比微调，在处理企业内部知识问答场景中最大的优势是什么？",
+    "options": {
+      "A": "模型推理速度更快",
+      "B": "不需要 Embedding 模型",
+      "C": "知识更新只需重新索引文档，无需重新训练，且答案可追溯来源",
+      "D": "生成的回答永远不会有幻觉"
+    },
+    "answer": "C",
+    "explanation": "RAG 的核心优势在于：文档更新后只需重新索引（几分钟），无需像微调那样重新训练（成本$1K-100K）。同时 RAG 可以展示引用了哪个文档片段，实现来源可审计。但 RAG 不能完全消除幻觉（只能说大幅减少），仍需配合 Guardrails。",
+    "topic": "RAG原理与实现"
+  },
+  {
+    "type": "选择",
+    "difficulty": "中等",
+    "question": "在生产环境的 RAG 系统中，基础向量搜索返回的结果'向量相似但对回答问题无用'。以下哪种高级 RAG 策略组合最能有效解决此问题？",
+    "options": {
+      "A": "增大 top-K 检索数量 + 使用更大的 Embedding 模型",
+      "B": "混合搜索（BM25 + 向量搜索）+ Cross-Encoder 重排序",
+      "C": "仅使用关键词精确匹配替代向量搜索",
+      "D": "将所有文档合并为一个大块再进行检索"
+    },
+    "answer": "B",
+    "explanation": "混合搜索结合了 BM25（精确关键词匹配，适合 Error code 等精确查询）和向量搜索（语义理解，适合同义词场景）的优势。Cross-Encoder 将查询和文档一起编码，比 Bi-Encoder 更精确，先用向量搜索粗筛 top 100，再用 Cross-Encoder 精排返回 top 5，性价比最高。单纯增大 top-K 会引入更多噪声，关键词搜索无法处理语义，大块合并会降低检索精度。",
+    "topic": "RAG原理与实现"
+  },
+  {
+    "type": "选择",
+    "difficulty": "中等",
+    "question": "在 Function Calling 的生产实现中，以下哪项描述是正确的？",
+    "options": {
+      "A": "模型负责执行函数并将结果返回给用户",
+      "B": "工具描述（tool description）本质上是提示词的一部分，需要清晰描述使用场景和限制",
+      "C": "OpenAI 和 Anthropic 的 API 对工具调用参数的返回格式完全相同",
+      "D": "Function Calling 可以完全替代 RAG 实现所有知识检索功能"
+    },
+    "answer": "B",
+    "explanation": "在 Function Calling 机制中，工具定义（JSON Schema）会被注入到模型的上下文中，本质上是提示词。描述写得好不好直接影响模型是否正确选择工具。A 错误：模型只决定调用哪个函数和传什么参数，代码负责执行。C 错误：OpenAI 返回 JSON 字符串（需 json.loads），Anthropic 返回已解析的 dict。D 错误：Function Calling 适合调用外部 API/工具，RAG 适合知识检索，两者互补。",
+    "topic": "Function Calling机制"
+  },
+  {
+    "type": "选择",
+    "difficulty": "困难",
+    "question": "你在一个 6GB 显存的消费级 GPU 上需要微调 Llama 3 8B 模型（FP16 约 16GB）。以下哪种方案组合是可行且生产可部署的？",
+    "options": {
+      "A": "全量微调 + FP16 精度 + DeepSpeed ZeRO-3",
+      "B": "QLoRA（NF4 量化基础模型 + FP16 LoRA 适配器）+ Unsloth 加速",
+      "C": "LoRA（FP16 基础模型 + FP16 适配器）+ 梯度检查点",
+      "D": "FP8 量化全量微调 + CPU offload"
+    },
+    "answer": "B",
+    "explanation": "QLoRA 将基础模型量化到 4bit（~4GB）+ LoRA 适配器 FP16（~50MB）+ 训练开销 ≈ 6GB，6GB 显存刚好够用。Unsloth 比原生 HuggingFace 快 2-5 倍。A 错误：6GB 放不下 16GB 的 FP16 模型，DeepSpeed ZeRO-3 是分布式方案。C 错误：LoRA 的基础模型仍是 FP16（16GB），6GB 放不下。D 错误：目前主流框架不支持 FP8 全量微调的生产方案，CPU offload 极慢。",
+    "topic": "LoRA/QLoRA微调"
+  },
+  {
+    "type": "判断",
+    "difficulty": "简单",
+    "question": "在 LLM 推理的 Decode 阶段，瓶颈在于 GPU 的计算能力（FLOPS），因为每个新 token 都需要大量的矩阵乘法运算。",
+    "answer": false,
+    "explanation": "Decode 阶段的瓶颈是显存带宽（Memory-bound），而非计算能力。每个新 token 生成时需要读取整个模型权重（如 Llama 3 70B 约 140GB），但只做一次向量-矩阵乘法，GPU 算力严重闲置。Prefill 阶段才是计算密集（Compute-bound），因为一次性处理整个提示的所有 token 可以做大规模并行矩阵乘法。理解两阶段的不同瓶颈是推理优化的基础。",
+    "topic": "Transformer架构"
+  },
+  {
+    "type": "判断",
+    "difficulty": "中等",
+    "question": "Context Engineering 中，将关键信息放在提示词的中间位置是最优策略，因为模型的注意力在整个上下文窗口中均匀分布。",
+    "answer": false,
+    "explanation": "这是经典的'迷失在中间'（Lost in the Middle）效应。研究表明模型对上下文窗口开头和结尾的信息关注度最高，中间位置（40%-70%）的信息检索准确率下降 10-20%。正确策略是将最重要的信息放开头或结尾，并且精心策划的 10K token 优于硬塞的 100K token。",
+    "topic": "Context Engineering"
+  },
+  {
+    "type": "判断",
+    "difficulty": "困难",
+    "question": "在 SFT（监督微调）阶段，训练数据的 system 和 user 部分也应参与 loss 计算，这样模型能更好地理解用户意图，从而生成更准确的回答。",
+    "answer": false,
+    "explanation": "这是一个关键的工程细节——Loss Masking。SFT 训练时只计算 assistant 部分的 loss，system 和 user 部分被 mask 掉。如果不做 mask，模型也会学'生成用户的问题'，退化为续写机器而非回答机器。这正是预训练模型（续写）和 SFT 后模型（回答）的本质区别。Stanford Alpaca 和 Llama 2 Chat 都采用了这一技术。",
+    "topic": "Transformer架构"
+  },
+  {
+    "type": "工程实现",
+    "difficulty": "中等",
+    "question": "你正在为一家电商公司构建客服 RAG 系统，需要处理产品手册、退换货政策、常见问题等文档（共约 500 页）。请设计完整的 RAG 管线架构，包括：\n1. 文档分块策略及理由\n2. Embedding 模型和向量数据库选型\n3. 检索策略（基础 vs 高级）\n4. 提示词模板设计\n5. 如何处理'文档中找不到答案'的情况",
+    "answer": "参考答案要点：\n\n1. 分块策略：\n- 采用语义分块（按段落/章节边界），chunk_size=500-1000 token\n- 保留 chunk 之间的重叠（overlap=100-200 token）防止语义断裂\n- 每个 chunk 附加元数据（文档名、章节标题、更新日期）\n- 对于 FAQ 类文档，每个 Q&A 对作为独立 chunk\n\n2. 选型：\n- Embedding：text-embedding-3-small（性价比高）或 BGE-M3（中文优化）\n- 向量数据库：Pinecone（托管省心）或 ChromaDB（本地开发）或 Milvus（大规模自建）\n\n3. 检索策略：\n- 混合搜索：BM25 + 向量搜索，Reciprocal Rank Fusion 合并结果\n- Cross-Encoder 重排序 top 100 → 返回 top 5\n- 为退换货政策类查询做查询改写（同义词扩展）\n\n4. 提示词模板：\n- System prompt 设定角色为客服助手\n- 明确指令：'基于以下文档回答，如果文档中没有答案请明确告知'\n- 要求引用来源文档\n- 对无法回答的问题引导用户联系人工客服\n\n5. 无答案处理：\n- 设置相似度阈值，低于阈值时回复'文档中未找到相关信息'\n- 记录未命中查询用于后续文档补充\n- 提供人工客服转接入口",
+    "explanation": "评分标准：分块策略合理且有理由（2分）、选型有依据（2分）、检索策略包含混合搜索或重排序（2分）、提示词设计完整（2分）、无答案处理有兜底方案（2分）",
+    "topic": "RAG原理与实现"
+  },
+  {
+    "type": "工程实现",
+    "difficulty": "困难",
+    "question": "你需要设计一个 AI Agent 系统，能够：\n- 查询公司内部知识库回答技术问题（RAG）\n- 调用 Jira API 创建和更新工单（Function Calling）\n- 查询监控系统获取服务状态（Function Calling）\n- 管理多轮对话上下文（Context Engineering）\n\n请设计完整的技术架构，要求：\n1. Function Calling 的工具定义和安全防护设计\n2. RAG 与 Function Calling 的调度决策逻辑\n3. Context Engineering 策略（200K 窗口如何分配）\n4. 防止工具描述被注入攻击的方案\n5. 异常处理和降级策略",
+    "answer": "参考答案要点：\n\n1. Function Calling 设计：\n- 工具定义用 JSON Schema，description 明确写 'Use when X. Do not use for Y'\n- 参数校验：对 LLM 输出的参数做 schema 验证和业务逻辑校验\n- 权限控制：不同角色的用户可调用的工具集不同\n- 审计日志：记录每次工具调用的输入、输出、用户身份\n\n2. 调度逻辑：\n- 意图分类前置：用 LLM 或规则判断是'知识问答'还是'执行操作'\n- 知识问答 → RAG 管线\n- 执行操作 → Function Calling\n- 混合场景：先 RAG 检索上下文，再 Function Calling 执行操作\n- 确认机制：写操作（创建工单）需要用户二次确认\n\n3. Context Engineering（200K 窗口）：\n- 系统提示 ~500 token\n- 工具定义：只加载当前意图相关的工具 ~2K\n- RAG 检索结果：最相关的 3-5 个 chunk ~4K\n- 对话历史：最近 5 轮 + 早期摘要 ~4K\n- 留给回答 ~4K\n- 剩余空间留白，不强行填满\n- 关键信息（用户身份、当前任务）放开头\n\n4. 注入防护：\n- 工具描述来源可信，硬编码在服务端，不由用户输入\n- 用户输入不直接拼入工具描述\n- 输出校验：LLM 生成的 tool_call 经过白名单验证\n- 敏感操作需要额外确认步骤\n\n5. 异常处理：\n- 工具调用超时 → 降级为纯对话回复 + 告知用户稍后重试\n- RAG 检索无结果 → 提示用户信息不足，建议联系人工\n- LLM 输出非法 tool_call → 拒绝执行 + 重试一次\n- 全链路 Circuit Breaker：连续失败 N 次后停止调用",
+    "explanation": "评分标准：工具定义和安全防护完整（3分）、调度逻辑清晰有决策树（3分）、Context 分配有具体数字和策略（2分）、注入防护方案落地（2分）、异常处理和降级全面（2分）",
+    "topic": "Function Calling机制"
+  },
+  {
+    "type": "思想论述",
+    "difficulty": "困难",
+    "question": "一位工程师提出：'既然 LoRA 微调成本这么低（6GB 显存、不到 1% 参数），我们应该对所有业务场景都先做微调，而不是搭 RAG 系统。'\n\n请从以下维度论述你是否同意这个观点，并给出你的技术决策框架：\n1. 知识类型（静态知识 vs 动态知识 vs 行为模式）\n2. 成本结构（训练成本 vs 运行成本 vs 维护成本）\n3. 工程复杂度和可维护性\n4. 给出一个具体的决策矩阵或流程图",
+    "answer": "参考答案要点：\n\n不同意。LoRA 微调和 RAG 不是互斥关系，而是互补关系。决策取决于知识类型和业务需求。\n\n1. 知识类型维度：\n- 动态知识（产品价格、库存、政策更新）→ RAG。因为知识频繁变化，微调后模型的知识会过时，每次更新都要重新训练。\n- 静态知识（公司历史、技术文档）→ RAG 或微调均可，但 RAG 更易审计来源。\n- 行为模式（回复风格、语气、专业术语使用、输出格式）→ LoRA 微调。这是模型的行为特征，不是知识，微调效果更好。\n- 最佳实践：用 LoRA 微调'怎么说'，用 RAG 提供'说什么'。\n\n2. 成本结构：\n- LoRA 训练成本低（$10-50），但维护成本高：数据需要持续标注、模型需要版本管理、每次业务规则变更都要重新训练。\n- RAG 初始搭建成本中等，但维护成本低：文档更新只需重新索引（分钟级），无需重训模型。\n- 运行成本：RAG 每次查询多一次检索（$0.01-0.10），微调后无额外检索成本。\n\n3. 工程复杂度：\n- LoRA 需要数据标注流水线、训练流水线、模型版本管理、A/B 测试、回归测试。\n- RAG 需要文档管理、索引管理、检索调优。但对团队来说更直观（文档 → 检索 → 回答）。\n- 两者结合：RAG 作为知识层 + LoRA 适配器作为行为层 + Function Calling 作为执行层 = 完整 Agent。\n\n4. 决策矩阵：\n| 场景 | 知识变化频率 | 决策 |\n|------|------------|------|\n| 客服问答（政策类）| 高 | RAG |\n| 代码风格对齐 | 低 | LoRA |\n| 行业术语适配 | 低 | LoRA |\n| 产品信息查询 | 高 | RAG |\n| 复杂任务 Agent | 中 | RAG + LoRA + Function Calling |",
+    "explanation": "评分标准：能明确立场且有理有据（2分）、从知识类型维度区分微调和 RAG 的适用场景（3分）、成本分析有具体数字且考虑全生命周期（2分）、工程复杂度分析接地气（2分）、决策矩阵或流程图实用可操作（3分）。核心观点：微调改变行为模式，RAG 提供外部知识，两者互补而非替代。",
+    "topic": "LoRA/QLoRA微调"
+  }
+]
